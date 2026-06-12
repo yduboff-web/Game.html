@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0e1c33">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Navi Cards · Shmuel Beis</title>
+<style>
+:root{
+  --navy:#0e1c33; --navy2:#15294b; --navy3:#1c3560;
+  --gold:#c9a449; --gold2:#e8c97a; --golddim:#8a7434;
+  --cream:#f7f2e2; --cream2:#efe7d0; --ink:#1c2538;
+  --green:#3f7d4e; --red:#a8432e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:radial-gradient(120% 90% at 50% 0%, #16294a 0%, #0e1c33 55%, #091324 100%);
+  color:var(--cream); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  min-height:100dvh; overscroll-behavior-y:contain;
+}
+.serif{font-family:Georgia,"Times New Roman",serif}
+#shell{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+
+/* ── top chrome ── */
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px}
+#topbar .tools{display:flex;gap:8px}
+.iconbtn{background:rgba(232,201,122,.08);border:1px solid rgba(201,164,73,.45);color:var(--gold2);
+  border-radius:10px;font-size:14px;padding:6px 11px;cursor:pointer;font-weight:600}
+.iconbtn:active{transform:scale(.96)}
+#besd{font-family:Georgia,serif;color:var(--gold2);font-size:15px;letter-spacing:1px}
+#scorebar{display:none;margin:6px 12px 0;border:1px solid rgba(201,164,73,.5);border-radius:12px;
+  background:rgba(9,19,36,.55);overflow:hidden}
+#scorebar.on{display:grid;grid-template-columns:1fr 1fr}
+.sb{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.sb+.sb{border-left:1px solid rgba(201,164,73,.35)}
+.sb .nm{font-weight:800;font-size:13px;color:var(--gold2);letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb .nm .turnDot{color:#fff;font-size:10px;vertical-align:1px}
+.sb .nums{display:flex;gap:10px;font-size:12px;color:#cfd6e4}
+.sb .nums b{color:#fff}
+
+/* ── view / screens ── */
+#view{flex:1;display:flex;flex-direction:column;padding:14px 16px calc(28px + env(safe-area-inset-bottom))}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+h1.title{font-family:Georgia,serif;color:var(--gold2);letter-spacing:4px;font-size:34px;margin:10px 0 2px;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.subtitle{color:#cfd6e4;font-size:14px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.kicker{color:var(--gold);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin:14px 0 6px;text-align:center}
+p.lead{color:#dbe2ef;font-size:15px;line-height:1.5;max-width:330px;margin:8px auto}
+
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:15px 16px;font-size:17px;font-weight:800;
+  cursor:pointer;margin-top:10px;letter-spacing:.3px}
+.btn:active{transform:scale(.985)}
+.btn.gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:var(--navy)}
+.btn.line{background:transparent;border:1.5px solid var(--gold);color:var(--gold2)}
+.btn.ghost{background:rgba(255,255,255,.06);color:#dbe2ef;border:1px solid rgba(255,255,255,.15);font-weight:600;font-size:15px}
+.btn.green{background:var(--green);color:#fff}
+.btn.red{background:var(--red);color:#fff}
+.btn:disabled{opacity:.45}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btnrow .btn{margin-top:10px}
+
+/* ── setup ── */
+.field{margin-top:12px}
+.field label{display:block;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.field input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(201,164,73,.55);
+  background:rgba(9,19,36,.6);color:var(--cream);font-size:17px}
+.field input:focus{outline:2px solid var(--gold2)}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{border:1.5px solid rgba(201,164,73,.5);background:rgba(9,19,36,.5);color:#dbe2ef;border-radius:12px;
+  padding:11px 8px;font-size:14px;font-weight:700;cursor:pointer;text-align:center}
+.chip small{display:block;font-weight:500;font-size:11px;color:#9aa6bb;margin-top:3px}
+.chip.sel{background:var(--gold);color:var(--navy);border-color:var(--gold2)}
+.chip.sel small{color:#3c3013}
+.hint{font-size:12.5px;color:#9aa6bb;line-height:1.45;margin-top:8px}
+
+/* ── the trading card ── */
+.ncard{width:min(300px,82vw);margin:0 auto;border-radius:16px;overflow:hidden;
+  box-shadow:0 12px 30px rgba(0,0,0,.55),0 0 0 1px rgba(201,164,73,.6);
+  background:var(--cream);animation:flipIn .45s ease}
+.ncard-top{background:linear-gradient(180deg,var(--navy2),var(--navy));color:var(--gold2);
+  font-family:Georgia,serif;letter-spacing:5px;font-size:14px;font-weight:700;text-align:center;padding:9px 0;
+  border-bottom:2px solid var(--gold)}
+.ncard-top .st{color:var(--gold);font-size:11px;letter-spacing:0}
+.ncard-face{padding:12px 14px 8px;color:var(--ink);text-align:center}
+.nc-icon{font-size:44px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.nc-name{font-family:Georgia,serif;font-weight:700;font-size:20px;margin-top:5px;color:var(--navy)}
+.nc-heb{font-family:Georgia,serif;font-size:15px;color:#5a4a1d;direction:rtl}
+.nc-tag{font-size:12px;color:#5b6478;font-style:italic;margin:4px 0 9px;min-height:15px}
+.srow{display:grid;grid-template-columns:86px 1fr 30px;align-items:center;gap:7px;padding:4.5px 6px;border-radius:8px;text-align:left}
+.srow .sl{font-size:11.5px;font-weight:700;color:#3a4358;letter-spacing:.2px;white-space:nowrap}
+.srow .sbar{height:8px;border-radius:99px;background:#ddd3b6;overflow:hidden}
+.srow .sbar i{display:block;height:100%;background:linear-gradient(90deg,var(--golddim),var(--gold));border-radius:99px}
+.srow b{font-size:13px;text-align:right;color:var(--navy)}
+.srow.hl{background:var(--navy);outline:2px solid var(--gold)}
+.srow.hl .sl{color:var(--gold2)}
+.srow.hl b{color:#fff}
+.srow.hl .sbar{background:#28406b}
+.ncard-bot{background:var(--cream2);color:#7a6c45;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;
+  text-align:center;padding:5px 0;border-top:1px solid #d8cba6}
+
+/* compact cards (side-by-side reveal) */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;margin-top:10px}
+.duo .ncard{width:100%}
+.duo .nc-icon{font-size:30px}
+.duo .nc-name{font-size:14.5px}
+.duo .nc-heb{font-size:12px}
+.duo .nc-tag{display:none}
+.duo .ncard-top{font-size:10px;letter-spacing:3px;padding:6px 0}
+.duo .srow{grid-template-columns:58px 1fr 24px;padding:3px 4px;gap:5px}
+.duo .srow .sl{font-size:9px}
+.duo .srow b{font-size:11.5px}
+.duo .srow .sbar{height:6px}
+.duo .ncard-bot{display:none}
+.owner{font-size:12px;font-weight:800;color:var(--gold2);text-align:center;letter-spacing:1px;margin-bottom:5px;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* card back */
+.ncard.back{background:linear-gradient(160deg,#13264a,var(--navy) 70%);padding:10px;aspect-ratio:5/6.6;
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.back-inner{flex:1;width:100%;border:2px solid var(--gold);border-radius:10px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;box-shadow:inset 0 0 0 4px var(--navy),inset 0 0 0 5px rgba(201,164,73,.55)}
+.em-star{color:var(--gold2);font-size:30px;line-height:1}
+.em-navi{font-family:Georgia,serif;color:var(--gold2);font-size:34px;letter-spacing:7px;font-weight:700;margin-top:2px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.em-sub{color:var(--gold);font-size:8.5px;letter-spacing:4px;margin-top:4px}
+.em-foot{color:var(--gold);font-size:9px;letter-spacing:3px;margin-top:18px}
+.minibacks{display:flex;gap:6px;justify-content:center;margin:6px 0}
+.miniback{width:34px;height:46px;border-radius:6px;background:linear-gradient(160deg,#13264a,var(--navy));
+  border:1.5px solid var(--gold);box-shadow:inset 0 0 0 2px var(--navy),inset 0 0 0 3px rgba(201,164,73,.5)}
+
+@keyframes flipIn{from{transform:rotateY(85deg);opacity:.2}to{transform:rotateY(0);opacity:1}}
+@media (prefers-reduced-motion:reduce){.ncard{animation:none}.btn:active,.iconbtn:active{transform:none}}
+
+/* ── stat call buttons ── */
+.statbtns{margin-top:14px}
+.statbtn{display:grid;grid-template-columns:34px 1fr auto;align-items:center;width:100%;text-align:left;
+  background:rgba(21,41,75,.85);border:1.5px solid rgba(201,164,73,.55);color:var(--cream);
+  border-radius:13px;padding:13px 14px;font-size:16.5px;font-weight:800;margin-top:8px;cursor:pointer;letter-spacing:.4px}
+.statbtn:active{background:var(--gold);color:var(--navy)}
+.statbtn .ic{font-size:19px}
+.statbtn .arr{color:var(--gold);font-weight:400}
+
+/* ── banners / results ── */
+.banner{border-radius:14px;padding:14px 16px;text-align:center;margin-top:12px}
+.banner.gold{background:linear-gradient(180deg,rgba(232,201,122,.18),rgba(201,164,73,.1));border:1.5px solid var(--gold)}
+.banner.plain{background:rgba(9,19,36,.55);border:1px solid rgba(255,255,255,.14)}
+.banner h2{margin:0;font-family:Georgia,serif;color:var(--gold2);font-size:22px;letter-spacing:1px}
+.banner p{margin:7px 0 0;color:#dbe2ef;font-size:14px;line-height:1.5}
+.calledTag{display:inline-block;background:var(--gold);color:var(--navy);font-weight:900;letter-spacing:2px;
+  border-radius:99px;padding:7px 18px;font-size:14px;text-transform:uppercase}
+
+/* ── challenge ── */
+.chead{background:linear-gradient(180deg,var(--navy2),var(--navy));border:1px solid var(--gold);border-radius:14px 14px 0 0;
+  padding:11px 14px;display:flex;justify-content:space-between;align-items:center}
+.chead .t{font-family:Georgia,serif;color:var(--gold2);letter-spacing:2px;font-size:15px;font-weight:700}
+.chead .num{background:var(--gold);color:var(--navy);font-weight:900;border-radius:99px;padding:3px 10px;font-size:12px}
+.cbody{background:var(--cream);border-radius:0 0 14px 14px;padding:6px 12px 12px;color:var(--ink)}
+.qblock{border-bottom:1px dashed #cfc2a0;padding:11px 2px}
+.qblock:last-child{border-bottom:0}
+.qrow{display:flex;gap:9px;align-items:flex-start}
+.qchip{flex:0 0 auto;background:var(--gold);color:var(--navy);font-weight:900;border-radius:6px;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+.qtext{font-size:14.5px;line-height:1.45;font-weight:600;color:var(--navy)}
+.ans{margin:9px 0 2px 31px;padding:8px 10px;border-left:3px solid var(--gold);background:#efe7d0;border-radius:0 8px 8px 0;
+  font-size:13.5px;line-height:1.45;color:#3c3320}
+.revealbtn{margin:8px 0 0 31px;background:var(--navy);color:var(--gold2);border:0;border-radius:9px;
+  padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.marks{display:flex;gap:8px;margin:8px 0 0 31px}
+.mk{border:1.5px solid #b9ab83;background:#fff;border-radius:9px;padding:7px 16px;font-size:14px;font-weight:800;cursor:pointer;color:#6a624a}
+.mk.y.sel{background:var(--green);border-color:var(--green);color:#fff}
+.mk.n.sel{background:var(--red);border-color:var(--red);color:#fff}
+
+/* perek picker */
+.perekgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.pk{background:rgba(21,41,75,.85);border:1.5px solid rgba(201,164,73,.55);color:var(--cream);
+  border-radius:11px;padding:12px 4px;font-weight:800;font-size:15px;cursor:pointer;text-align:center}
+.pk:active{background:var(--gold);color:var(--navy)}
+
+/* handoff */
+.hand{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hand .ncard.back{width:min(210px,58vw)}
+.passlbl{color:var(--gold);letter-spacing:3px;font-size:12px;text-transform:uppercase;margin-top:18px}
+.passname{font-family:Georgia,serif;font-size:30px;color:#fff;margin:4px 0 2px;font-weight:700}
+.passwhy{color:#cfd6e4;font-size:14px;max-width:300px;line-height:1.45}
+
+/* modal */
+#modal{position:fixed;inset:0;background:rgba(5,10,20,.78);display:none;align-items:flex-end;justify-content:center;z-index:50}
+#modal.on{display:flex}
+.sheet{background:var(--navy2);border:1px solid var(--gold);border-bottom:0;border-radius:18px 18px 0 0;
+  max-width:520px;width:100%;max-height:82dvh;overflow:auto;padding:18px 18px calc(20px + env(safe-area-inset-bottom))}
+.sheet h3{font-family:Georgia,serif;color:var(--gold2);letter-spacing:2px;margin:0 0 8px;text-align:center}
+.sheet p,.sheet li{font-size:14px;line-height:1.55;color:#dbe2ef}
+.sheet b{color:var(--gold2)}
+.sheet ul{padding-left:18px;margin:6px 0}
+
+.tablewrap{margin-top:12px;border:1px solid rgba(201,164,73,.5);border-radius:12px;overflow:hidden}
+.frow{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;padding:9px 12px;font-size:13.5px;background:rgba(9,19,36,.5)}
+.frow.hd{background:rgba(201,164,73,.18);color:var(--gold2);font-weight:800;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.frow+.frow{border-top:1px solid rgba(255,255,255,.08)}
+.frow span{min-width:46px;text-align:center}
+.frow .pn{text-align:left;font-weight:700;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smallnote{font-size:11.5px;color:#8d99af;text-align:center;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div id="topbar">
+    <div class="tools">
+      <button class="iconbtn" onclick="openRules()">Rules</button>
+      <button class="iconbtn" id="restartBtn" style="display:none" onclick="confirmRestart()">&#8634;</button>
+    </div>
+    <div id="besd">&#1489;"&#1492;</div>
+  </div>
+  <div id="scorebar"></div>
+  <div id="view"></div>
+</div>
+
+<div id="modal" onclick="if(event.target===this)closeRules()">
+  <div class="sheet">
+    <h3>&#10022; HOW TO PLAY &#10022;</h3>
+    <ul>
+      <li>Both players draw one card and look <b>only at their own</b>.</li>
+      <li>The <b>caller</b> names one stat &mdash; just the name, <b>never the number</b>.</li>
+      <li>The other player picks: <b>Accept</b> or <b>Challenge</b>.</li>
+      <li><b>Accept:</b> flip both cards &mdash; the higher called stat wins the opponent's card.</li>
+      <li><b>Challenge:</b> answer the <b>3 questions</b> on a challenge card \u2014 you need 3 of 3 right (or whatever you set at game start). Win = a challenge point <b>and</b> the card. Lose = you hand over your card.</li>
+      <li><b>Tie on a stat:</b> Showdown &mdash; lay 3 face-down, flip a 4th, higher called stat wins.</li>
+      <li>The caller role <b>switches every turn</b>.</li>
+      <li><b>Win</b> by reaching <b>10 challenges</b>, or by collecting the most cards when a draw pile runs out (tie &rarr; most challenges).</li>
+    </ul>
+    <p><b>The Golden Rule:</b> if you don't know the answer &mdash; don't challenge. This is Shmuel Beis. Know it, and the game is yours.</p>
+    <button class="btn gold" onclick="closeRules()">Got it</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   NAVI CARDS - Shmuel Beis Edition - Bader Hillel Academy
+   ------------------------------------------------------------
+   EDIT ME, Rabbi D:
+   - CHARACTERS below is the built-in starter deck. Swap in your
+     students' characters any time: name, Hebrew, tagline, icon,
+     and stats [Strength, Wisdom, Speech, Loyalty, Emunah] (1-100).
+   - CHALLENGES holds all 35 cards. The "a" lines are the answer
+     key the checker reads aloud - reword any answer to match
+     exactly what you taught in class.
+   ============================================================ */
+
+const STATS = [
+  {k:"Strength", ic:"\uD83D\uDCAA"},
+  {k:"Wisdom",   ic:"\uD83E\uDDE0"},
+  {k:"Speech",   ic:"\uD83D\uDDE3\uFE0F"},
+  {k:"Loyalty",  ic:"\uD83E\uDD1D"},
+  {k:"Emunah",   ic:"\u2728"}
+];
+
+const CHARACTERS = [
+ {n:"Dovid HaMelech", h:"דוד המלך", t:"Melech Yisrael — warrior, singer, servant of Hashem", i:"👑", s:[90,92,96,90,100]},
+ {n:"Yoav ben Tzruya", h:"יואב בן צרויה", t:"Dovid's fearless general — wins wars his own way", i:"⚔️", s:[97,78,68,70,60]},
+ {n:"Avishai ben Tzruya", h:"אבישי בן צרויה", t:"The warrior who never leaves Dovid's side", i:"🛡️", s:[93,62,55,95,75]},
+ {n:"Asahel", h:"עשהאל", t:"Swift as a deer in the field", i:"🏃", s:[76,55,45,92,70]},
+ {n:"Avner ben Ner", h:"אבנר בן נר", t:"Shaul's mighty general and kingmaker", i:"🪖", s:[91,76,74,52,58]},
+ {n:"Ish-Boshes", h:"איש בשת", t:"Shaul's son — king for a short while", i:"🏰", s:[32,45,40,60,55]},
+ {n:"Michal bas Shaul", h:"מיכל בת שאול", t:"Shaul's daughter, Dovid's first wife", i:"💍", s:[28,80,74,62,68]},
+ {n:"Batsheva", h:"בת שבע", t:"Mother of the next king of Yisrael", i:"🌹", s:[25,84,70,85,82]},
+ {n:"Uriah HaChiti", h:"אוריה החתי", t:"The soldier who would not go home", i:"🎖️", s:[86,58,62,99,76]},
+ {n:"Nosson HaNavi", h:"נתן הנביא", t:"The navi who told the king the truth", i:"📜", s:[30,95,98,92,98]},
+ {n:"Gad HaNavi", h:"גד הנביא", t:"Dovid's seer — brought him hard choices", i:"📖", s:[28,90,86,90,96]},
+ {n:"Avshalom", h:"אבשלום", t:"The handsome prince who stole hearts", i:"🌪️", s:[82,70,94,12,35]},
+ {n:"Achitofel", h:"אחיתופל", t:"Advice like asking the word of Hashem", i:"🧠", s:[22,99,88,18,40]},
+ {n:"Chushai HaArki", h:"חושי הארכי", t:"Dovid's friend who out-talked Achitofel", i:"🤝", s:[35,94,93,96,85]},
+ {n:"Tzadok HaKohen", h:"צדוק הכהן", t:"Faithful kohen who carried the Aron", i:"🕎", s:[40,88,72,95,97]},
+ {n:"Evyasar HaKohen", h:"אביתר הכהן", t:"The kohen who escaped to Dovid with the eifod", i:"🕯️", s:[38,84,68,90,93]},
+ {n:"Achimaatz ben Tzadok", h:"אחימעץ בן צדוק", t:"The fastest runner with the news", i:"🏃", s:[70,74,62,93,82]},
+ {n:"Mefiboshes", h:"מפיבשת", t:"Yonasan's son — ate at the king's table", i:"🦯", s:[15,76,60,88,84]},
+ {n:"Tziva", h:"ציבא", t:"The servant with a smooth story", i:"🗝️", s:[45,68,80,30,48]},
+ {n:"Shimi ben Gera", h:"שמעי בן גרא", t:"Threw stones and curses at the king", i:"🪨", s:[50,52,85,15,42]},
+ {n:"Barzilai HaGiladi", h:"ברזילי הגלעדי", t:"The 80-year-old who fed the king's camp", i:"🎁", s:[42,86,70,94,88]},
+ {n:"Amasa", h:"עמשא", t:"Avshalom's general — almost Dovid's", i:"🗡️", s:[87,58,64,55,60]},
+ {n:"Sheva ben Bichri", h:"שבע בן בכרי", t:"Blew the shofar of rebellion", i:"📯", s:[64,48,82,5,30]},
+ {n:"The Wise Woman of Tekoa", h:"האשה החכמה מתקוע", t:"Her story softened the king's heart", i:"🎭", s:[18,93,96,74,78]},
+ {n:"The Wise Woman of Avel", h:"האשה החכמה מאבל", t:"Saved her whole city with words", i:"🕊️", s:[20,96,92,82,84]},
+ {n:"Chiram Melech Tzor", h:"חירם מלך צור", t:"Sent cedars to build the king a palace", i:"🌲", s:[58,74,66,72,40]},
+ {n:"Oved-Edom", h:"עובד אדום", t:"His house was blessed by the Aron", i:"🏠", s:[45,64,50,86,95]},
+ {n:"Uzah", h:"עוזה", t:"Reached out to steady the Aron", i:"🐂", s:[70,42,38,80,58]},
+ {n:"Aravna HaYevusi", h:"ארונה היבוסי", t:"Gave his threshing floor for the mizbeach", i:"🌾", s:[50,70,60,75,72]},
+ {n:"Benayahu ben Yehoyada", h:"בניהו בן יהוידע", t:"Killed a lion in a pit on a snowy day", i:"🦁", s:[95,74,55,96,85]},
+ {n:"Itai HaGiti", h:"אתי הגתי", t:"Swore to follow Dovid anywhere", i:"✊", s:[88,66,70,97,72]}
+];
+
+/* All 35 challenge cards, matching the printed deck. "a" = answer key (editable). */
+const CHALLENGES = [
+ {id:1, perek:1, q:[
+   {q:"Where was Dovid when he found out that Shaul had died?", a:"He was in Tziklag, after defeating Amalek."},
+   {q:"What did Dovid do when he heard the news of Shaul and Yonasan's death?", a:"He tore his clothes, mourned, wept, and fasted until evening."},
+   {q:"What did Dovid command be done to the Amalekite who killed Shaul?", a:"He had him put to death — he had killed Hashem's anointed king."}]},
+ {id:2, perek:2, q:[
+   {q:"Which shevet crowned Dovid as king first, and in which city did this happen?", a:"Shevet Yehuda, in Chevron."},
+   {q:"Who did Avner ben Ner appoint as king instead of Dovid?", a:"Ish-Boshes, the son of Shaul."},
+   {q:"For how long was Dovid king in Chevron before ruling over all of Israel?", a:"7 years and 6 months."}]},
+ {id:3, perek:3, q:[
+   {q:"What did Dovid demand that Avner bring to him before they could make peace?", a:"Michal bas Shaul, his wife."},
+   {q:"What did Yoav do to Avner, and what reason did he give Dovid?", a:"Yoav killed Avner — claiming revenge for his brother Asahel, and calling Avner a spy."},
+   {q:"Who were the three Bnei Tzruya (\u05D1\u05E0\u05D9 \u05E6\u05E8\u05D5\u05D9\u05D4)?", a:"Yoav, Avishai, and Asahel."}]},
+ {id:4, perek:3, q:[
+   {q:"Name a wife and child of Dovid Hamelech.", a:"Any correct pair — e.g. Achinoam & Amnon; Avigayil & Kilav; Maacha & Avshalom; Chagis & Adoniyahu."},
+   {q:"What did Ish-Boshes accuse Avner of doing?", a:"Taking Ritzpa, Shaul's pilegesh."},
+   {q:"What did Avner do in response to Ish-Boshes's accusation against him?", a:"He became furious and swore to hand the whole kingdom over to Dovid."}]},
+ {id:5, perek:4, q:[
+   {q:"What happened to Ish-Boshes when he heard that Avner had died?", a:"His hands went weak — he lost his courage, and all Israel was shaken."},
+   {q:"What did the two officers of Ish-Boshes do to him?", a:"Rechav and Baanah killed him in his bed and brought his head to Dovid."},
+   {q:"How did Dovid respond when they came with the head of Ish-Boshes?", a:"He had them executed — wicked men who killed a righteous man in his own bed."}]},
+ {id:6, perek:5, q:[
+   {q:"How old was Dovid when he became king over all of Israel, and for how many years did he reign?", a:"30 years old; he reigned 40 years — 7\u00BD in Chevron and 33 in Yerushalayim."},
+   {q:"Which city did Dovid conquer from the Yevusim, and what did he name it after?", a:"Metzudas Tzion — he named it Ir Dovid, the City of Dovid."},
+   {q:"Who was Chiram, and what did he send to Dovid?", a:"The king of Tzor — he sent cedar wood, carpenters, and stonemasons to build Dovid a palace."}]},
+ {id:7, perek:5, q:[
+   {q:"How many children did Dovid have in Yerushalayim, and what were some of their names?", a:"11 more sons — including Shamua, Shovav, Nosson, and Shlomo (any correct names)."},
+   {q:"What did the Philistines do when they heard that Dovid was made king?", a:"They came up to attack him, spreading out in Emek Refaim."},
+   {q:"What battle strategy did Hashem give to Dovid upon his second time asking?", a:"Don't attack head-on — circle behind by the bechaim trees, and charge when you hear marching in the treetops."}]},
+ {id:8, perek:6, q:[
+   {q:"How many people did Dovid gather to bring the Aron to Yerushalayim?", a:"30,000."},
+   {q:"What did Uzah do when the oxen stumbled, and what happened to him as a result?", a:"He grabbed the Aron — Hashem struck him and he died on the spot."},
+   {q:"Why did Dovid put the Aron in the house of Oved-Edom instead of bringing it straight to Yerushalayim?", a:"He was afraid after what happened to Uzah — the Aron stayed there 3 months, and Oved-Edom's house was blessed."}]},
+ {id:9, perek:6, q:[
+   {q:"How did Dovid act when the Aron was finally brought into the city?", a:"He danced and leaped with all his strength before Hashem."},
+   {q:"What did Michal say to Dovid when she saw him dancing before the Aron?", a:"She mocked him — 'how honored the king looked today, exposed like an empty fellow before the maidservants!'"},
+   {q:"What was Michal's punishment for her words to Dovid?", a:"She had no child until the day she died."}]},
+ {id:10, perek:8, q:[
+   {q:"What area did Dovid take from the Pelishtim?", a:"Meseg Ha'amah — the city of Gas and its surrounding towns (Rashi)."},
+   {q:"What did Dovid do to Hadadezer's horses that he captured?", a:"He lamed (hamstrung) the chariot horses, keeping only 100 chariots' worth."},
+   {q:"What did Dovid do with all the gold, silver, and bronze he collected from the nations he defeated?", a:"He dedicated it all to Hashem — set aside for the future Beis Hamikdash."}]},
+ {id:11, perek:8, q:[
+   {q:"Who was Toei, and what did he do when he heard about Dovid's victory?", a:"The king of Chamas — he sent his son Yoram with gold, silver, and bronze gifts to bless Dovid."},
+   {q:"Who was the general of Dovid's army, the scribe, and the Kohen Gadol?", a:"General: Yoav ben Tzruya · Scribe: Serayah · Kohanim Gedolim: Tzadok and Achimelech."},
+   {q:"What does it mean that the children of Dovid were Kohanim?", a:"Rashi — they were great men and officers, not actual kohanim."}]},
+ {id:12, perek:9, q:[
+   {q:"For whose sake did Dovid want to show kindness to the house of Shaul?", a:"For the sake of Yonasan — to keep his promise of kindness."},
+   {q:"Who was Tziva, and what information did he give to Dovid?", a:"A servant of Shaul's house — he told Dovid that Yonasan's son Mefiboshes, lame in both legs, was alive."},
+   {q:"What did Dovid give to Mefiboshes, and how did he treat him?", a:"All of Shaul's fields, with Tziva's family to work them — and Mefiboshes ate at the king's table like a prince."}]},
+ {id:13, perek:10, q:[
+   {q:"Which king died, and who took over his throne?", a:"Nachash king of Ammon died; his son Chanun became king."},
+   {q:"What did the new king's advisers tell him about Dovid's messengers?", a:"That Dovid's comforters were really spies sent to scout and overthrow the city."},
+   {q:"What did Dovid tell his messengers to do after they were humiliated?", a:"Stay in Yericho until your beards grow back, then return."}]},
+ {id:14, perek:11, q:[
+   {q:"Who was the woman that Dovid Hamelech saw?", a:"Batsheva, the wife of Uriah HaChiti."},
+   {q:"What did Dovid try to do to get Uriah to go home to his wife?", a:"He told him to go home and rest, and sent a royal gift after him."},
+   {q:"Why did Uriah refuse to go home, and what did he explain to Dovid?", a:"'The Aron, Yisrael, and Yehuda are in sukkos, and Yoav and the soldiers camp in the field — how can I go home to eat and drink?'"}]},
+ {id:15, perek:11, q:[
+   {q:"What did Dovid send with Uriah to Yoav?", a:"A sealed letter — ordering that Uriah be placed in the fiercest battle and abandoned."},
+   {q:"How did Uriah die, and what did Dovid tell the messenger to say about it?", a:"He fell in the heavy fighting by the wall of Rabbah; Dovid said to tell Yoav 'don't be troubled — the sword devours sometimes this one, sometimes that one.'"},
+   {q:"What was Hashem upset about regarding Dovid's actions?", a:"What Dovid had done was evil in Hashem's eyes — the matter of Uriah and Batsheva."}]},
+ {id:16, perek:12, q:[
+   {q:"Who did Hashem send to Dovid, and what story did the prophet tell him?", a:"Nosson HaNavi — the story of a rich man with many flocks who took a poor man's one little lamb for his guest."},
+   {q:"What did Dovid rule regarding the rich man and poor man in the story?", a:"The man deserves death, and must pay back the lamb four times over."},
+   {q:"What punishment did the prophet tell him he would receive?", a:"The sword would never leave his house, and trouble would rise from his own family."}]},
+ {id:17, perek:12, q:[
+   {q:"What did Dovid do when the prophet told him that Hashem had forgiven his sin?", a:"He admitted 'Chatasi LaHashem' — and when the baby fell sick, he begged Hashem for him."},
+   {q:"What is one of the three things Dovid did for his son while he was sick?", a:"He fasted, davened, and lay on the ground (any one)."},
+   {q:"What did Dovid explain to his servants about why he was eating and celebrating after his son died?", a:"'While he lived, maybe Hashem would be gracious. Now, can I bring him back? I will go to him — he will not return to me.'"}]},
+ {id:18, perek:0, wild:true, q:[]},
+ {id:19, perek:13, q:[
+   {q:"What did Avshalom tell Tamar after Amnon sinned against her?", a:"'Be quiet for now, my sister — don't take this to heart.'"},
+   {q:"What did Avshalom do when Dovid found out what happened to Tamar?", a:"Dovid was very angry, but Avshalom said nothing to Amnon — and quietly hated him."},
+   {q:"How long did Avshalom wait before he took revenge on Amnon?", a:"Two full years — until the sheep-shearing at Baal Chatzor."}]},
+ {id:20, perek:14, q:[
+   {q:"How does the Navi describe Avshalom's appearance?", a:"The most handsome man in all Israel — no blemish from head to toe, with heavy hair cut once a year."},
+   {q:"What did Yoav realize, and to which city did Yoav send messengers?", a:"He realized the king's heart longed for Avshalom — he sent to Tekoa for a wise woman."},
+   {q:"What story did the wise woman from Tekoa tell to Dovid?", a:"She posed as a widow: one of her two sons killed the other, and the family demanded the killer — leaving her with no one."}]},
+ {id:21, perek:15, q:[
+   {q:"What are one of the three things that Avshalom made for himself?", a:"A chariot, horses, or 50 men to run before him (any one)."},
+   {q:"Why did Avshalom go to the gate each morning, and what did he do there?", a:"He stopped everyone coming to the king for judgment and said 'your case is good — but no one from the king will hear you.'"},
+   {q:"What did Avshalom use to steal the hearts of the people of Israel?", a:"Smooth words and flattery — 'if only I were judge!' — plus embracing and kissing whoever came near."}]},
+ {id:22, perek:15, q:[
+   {q:"What happened 40 years before this perek that Avshalom used as an excuse?", a:"Per Rashi — 40 years from when Israel first asked Shmuel for a king."},
+   {q:"What was Avshalom's plan in Chevron, and how did he convince Dovid to let him go?", a:"To crown himself king there — he told Dovid he had to fulfill a neder he made in Geshur to serve Hashem."},
+   {q:"How did the people respond when Avshalom declared himself king in Chevron?", a:"The shofar blew and they proclaimed 'Avshalom is king in Chevron!' — and the rebellion kept growing."}]},
+ {id:23, perek:16, q:[
+   {q:"Who came to greet Dovid as he fled, and what did he bring with him?", a:"Tziva, Mefiboshes's servant — with donkeys, bread, raisins, summer fruit, and wine."},
+   {q:"Who was Shimi ben Gera, and what did he do to Dovid as he fled?", a:"A relative of Shaul — he cursed Dovid, threw stones, and called him a man of blood."},
+   {q:"What did Dovid tell Avishai ben Tzruiya when he wanted to kill Shimi?", a:"'Let him curse — Hashem told him to. Maybe Hashem will see my pain and repay me good instead.'"}]},
+ {id:24, perek:16, q:[
+   {q:"How did Avshalom gain the trust of Chushai Ha'arki?", a:"Chushai declared 'as I served your father, so I will serve you' — whoever Hashem and Israel choose."},
+   {q:"What was Achitofel's advice to Avshalom, and what was his thinking?", a:"To take Dovid's pilagshim — proving the break with his father was final, so his followers would be strengthened."},
+   {q:"Why did Avshalom trust Achitofel's advice so much?", a:"Because Achitofel's advice was like asking the word of Hashem itself."}]},
+ {id:25, perek:17, q:[
+   {q:"What was Achitofel's expected outcome of his advice to Avshalom?", a:"He would chase Dovid that night with 12,000 men, strike only the weary king, and bring everyone back in peace."},
+   {q:"What advice did Chushai give to Avshalom?", a:"Wait — gather all Israel from Dan to Beer Sheva, and lead the battle yourself."},
+   {q:"What logic did Chushai use to negate Achitofel's advice?", a:"Dovid and his men are gibborim, bitter as a bear robbed of her cubs — if a few of yours fall at first, everyone will panic and flee."}]},
+ {id:26, perek:17, q:[
+   {q:"What animal did Chushai compare Dovid to, and what was his point?", a:"A bear robbed of her cubs in the field — Dovid is too fierce and dangerous to attack right now."},
+   {q:"What advice did Chushai give to Avshalom, and how was it received?", a:"Gather all Israel and attack with overwhelming force — and Avshalom liked it better than Achitofel's plan (Hashem decreed it)."},
+   {q:"Describe the chain of people who passed information from Chushai to Dovid.", a:"Chushai → Tzadok and Evyasar → a maidservant → Yonasan and Achimaatz at Ein Rogel — who hid in a well, then ran to warn Dovid."}]},
+ {id:27, perek:18, q:[
+   {q:"Which side attacked whom at the beginning of the battle?", a:"Dovid's army went out against Avshalom's forces — the battle was in the forest of Efraim."},
+   {q:"What happened to Avshalom while he was riding near Dovid's soldiers?", a:"His mule passed under a great tree and his hair caught in the branches — he hung between heaven and earth."},
+   {q:"Why did the soldier not want to kill Avshalom?", a:"Dovid had commanded 'guard the young man Avshalom for me' — 'even for 1,000 silver pieces I wouldn't touch the king's son.'"}]},
+ {id:28, perek:18, q:[
+   {q:"Why did Yoav kill Avshalom, even though Dovid had said not to hurt him?", a:"Yoav held that a rebel against the king forfeits his life — as long as Avshalom lived, the war and the danger would continue."},
+   {q:"What did the 3 spears signify?", a:"Per Rashi — the three hearts Avshalom stole: his father's, beis din's, and the heart of Israel."},
+   {q:"What did the Jewish army do after the battle?", a:"Yoav blew the shofar to stop the chase; they threw Avshalom into a great pit and piled a huge mound of stones over him."}]},
+ {id:29, perek:19, q:[
+   {q:"Why didn't the soldiers return to the city with fanfare after winning the battle?", a:"Because Dovid wept and mourned for Avshalom — the victory turned to mourning, and the men slipped back in ashamed."},
+   {q:"What was Yoav upset about, and what did he say to Dovid?", a:"'You shame the men who saved your life — you love your enemies and hate your friends! Go speak to them, or no one will stay tonight.'"},
+   {q:"What was the general opinion among the Jewish nation about the result of the war?", a:"All the shevatim argued: 'the king saved us, and Avshalom whom we anointed has died — why is no one bringing the king back?'"}]},
+ {id:30, perek:19, q:[
+   {q:"What message did Dovid send to Yehuda, and why didn't he go himself?", a:"'Why be last to bring the king home? You are my bone and flesh' — he waited to be invited back rather than force his return."},
+   {q:"Why did Dovid make Amasa the general instead of Yoav?", a:"To win Yehuda back — Amasa had led Avshalom's army — and because Yoav killed Avshalom against his orders."},
+   {q:"Why didn't Barzilai want to accept Dovid's reward, and who did he send in his place?", a:"He was 80 — 'can I still taste food or hear singers? Why be a burden?' He sent Kimham instead."}]},
+ {id:31, perek:20, q:[
+   {q:"Why did Sheva ben Bichri rebel against Dovid?", a:"After Israel felt insulted by Yehuda in the argument over the king — he blew a shofar: 'we have no portion in Dovid!'"},
+   {q:"What did Dovid do with the 10 pilagshim?", a:"He kept them shut away and provided for them, but never came to them — like living widows until they died."},
+   {q:"Why did Yoav assassinate Amasa?", a:"He saw Amasa as a rival for his position (and Amasa missed Dovid's deadline) — so he killed him with a hidden sword while greeting him."}]},
+ {id:32, perek:20, q:[
+   {q:"What was the city that Sheva was hiding in called, and why?", a:"Avel (Beis Maacha) — famous for wisdom: people would say 'ask in Avel,' and the matter was settled."},
+   {q:"How did the wise woman of Avel save her city from Yoav's army?", a:"She spoke to Yoav from the wall — he only wanted Sheva. The city threw Sheva's head over the wall, and Yoav withdrew."},
+   {q:"Why weren't Dovid's sons listed as part of his administration anymore?", a:"After Avshalom's rebellion, Dovid no longer gave his sons positions of power."}]},
+ {id:33, perek:21, q:[
+   {q:"How long was there a famine in the days of Dovid, and what was different about this one?", a:"Three years, year after year — and Dovid asked Hashem for the reason."},
+   {q:"Who were the Givonim, and what did they want?", a:"The nation that tricked Yehoshua into a treaty long ago — they demanded justice from the house of Shaul, who had struck them."},
+   {q:"How do we know that the people chosen were selected by Hashem?", a:"Dovid passed Shaul's descendants before the Aron — whoever the Aron held fast was the one chosen."}]},
+ {id:34, perek:21, q:[
+   {q:"How many people did the Givonim want, and what did they plan to do with them?", a:"Seven men — to hang them 'before Hashem' in Givas Shaul."},
+   {q:"How long were the bodies of the Givonim's victims hung?", a:"From the start of the harvest until rain finally fell from heaven — Ritzpa guarded them the whole time."},
+   {q:"What did Dovid do after it rained?", a:"He gathered the bones of Shaul and Yonasan, with the bones of the hanged, and buried them in the kever of Kish."}]},
+ {id:35, perek:24, q:[
+   {q:"What did Dovid do after Hashem incited him?", a:"He commanded Yoav to count Bnei Yisrael — a census."},
+   {q:"What were the three punishments that Hashem offered Dovid through the prophet Gad?", a:"7 years of famine, 3 months fleeing his enemies, or 3 days of plague."},
+   {q:"Which did Dovid choose, and what was his reasoning for choosing it?", a:"The plague — 'let us fall into Hashem's hand, for His mercies are great — not into the hand of man.'"}]}
+];
+
+/* ================= GAME ENGINE ================= */
+let G = null;
+let SETUP = {names:["Player 1","Player 2"], chMode:"order", chWin:3, sdMode:"simple", first:0};
+
+const $v = () => document.getElementById("view");
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function P(i){ return G.players[i]; }
+function nm(i){ return esc(P(i).name); }
+
+function openRules(){ document.getElementById("modal").classList.add("on"); }
+function closeRules(){ document.getElementById("modal").classList.remove("on"); }
+function confirmRestart(){ if(confirm("End this game and return to the main menu?")){ G=null; UI="home"; render(); } }
+
+/* ---------- card rendering ---------- */
+function cardFace(c, hl){
+  let rows = "";
+  STATS.forEach((st,i)=>{
+    const on = hl===i ? " hl" : "";
+    rows += '<div class="srow'+on+'"><span class="sl">'+st.ic+' '+st.k+'</span><span class="sbar"><i style="width:'+c.s[i]+'%"></i></span><b>'+c.s[i]+'</b></div>';
+  });
+  return '<div class="ncard"><div class="ncard-top"><span class="st">\u2726</span> NAVI <span class="st">\u2726</span></div>'+
+    '<div class="ncard-face"><div class="nc-icon">'+c.i+'</div><div class="nc-name">'+c.n+'</div>'+
+    '<div class="nc-heb">'+c.h+'</div><div class="nc-tag">'+c.t+'</div><div class="nc-stats">'+rows+'</div></div>'+
+    '<div class="ncard-bot">Shmuel Beis \u00B7 BHA</div></div>';
+}
+function cardBack(){
+  return '<div class="ncard back"><div class="back-inner"><div class="em-star">\u2726</div>'+
+    '<div class="em-navi">NAVI</div><div class="em-sub">HERO CARDS GAME</div>'+
+    '<div class="em-foot">SHMUEL BEIS EDITION</div></div></div>';
+}
+function duo(c0, c1, hl, lbl0, lbl1){
+  return '<div class="duo"><div><div class="owner">'+lbl0+'</div>'+cardFace(c0,hl)+'</div>'+
+    '<div><div class="owner">'+lbl1+'</div>'+cardFace(c1,hl)+'</div></div>';
+}
+
+/* ---------- chrome ---------- */
+let UI = "home";
+function go(u){ UI=u; render(); }
+function scorebar(){
+  const bar = document.getElementById("scorebar");
+  const inGame = G && UI!=="home" && UI!=="setup";
+  document.getElementById("restartBtn").style.display = inGame ? "" : "none";
+  if(!inGame){ bar.className=""; bar.innerHTML=""; return; }
+  bar.className = "on";
+  bar.innerHTML = [0,1].map(i=>{
+    const star = (G.caller===i && UI!=="gameover") ? ' <span class="turnDot">\u25CF calls</span>' : "";
+    return '<div class="sb"><span class="nm">'+nm(i)+star+'</span>'+
+      '<span class="nums"><span>Pile <b>'+P(i).pile.length+'</b></span>'+
+      '<span>Cards <b>'+P(i).coll.length+'</b></span>'+
+      '<span>\uD83C\uDFC6 <b>'+P(i).ch+'</b>/10</span></span></div>';
+  }).join("");
+}
+
+/* ---------- flow ---------- */
+function newGame(){
+  G = { players:[ {name:SETUP.names[0],pile:[],coll:[],ch:0}, {name:SETUP.names[1],pile:[],coll:[],ch:0} ],
+        round:1, caller:SETUP.first, chMode:SETUP.chMode, chWin:SETUP.chWin, sdMode:SETUP.sdMode,
+        chDeck:[], chDisc:[], turn:null, sd:null, q:null, res:null, hand:null };
+  const deck = shuffle(CHARACTERS);
+  const half = Math.floor(deck.length/2);
+  G.players[0].pile = deck.slice(0,half);
+  G.players[1].pile = deck.slice(half,2*half);
+  const order = CHALLENGES.map((c,i)=>i);
+  G.chDeck = G.chMode==="shuffled" ? shuffle(order) : order;
+  startTurn();
+}
+function startTurn(){
+  if(!P(0).pile.length || !P(1).pile.length){ return endByCards(); }
+  G.turn = { cards:[P(0).pile.shift(), P(1).pile.shift()], called:null,
+             cShown:false, rShown:false, resp:1-G.caller };
+  handoff(G.caller, "You call this turn", "Look at your card in private, then call ONE stat out loud \u2014 just the name, never the number.", "caller");
+}
+function handoff(p, why, sub, next){ G.hand = {p, why, sub, next}; go("handoff"); }
+function handoffDone(){ go(G.hand.next); }
+function revealCaller(){ G.turn.cShown = true; render(); }
+function revealResp(){ G.turn.rShown = true; render(); }
+function callStat(i){
+  G.turn.called = i;
+  handoff(G.turn.resp, "Pass the phone", nm(G.caller)+" has called a stat. Look at your own card, then decide: trust them \u2014 or challenge them.", "responder");
+}
+function nextTurn(){ G.round++; G.caller = 1-G.caller; startTurn(); }
+
+/* ---------- accept ---------- */
+function doAccept(){
+  const s = G.turn.called, c = G.turn.cards;
+  const v0 = c[0].s[s], v1 = c[1].s[s];
+  if(v0===v1){ G.sd = { stat:s, pots:[[],[]], deciders:null, phase:"intro", msg:"" }; return go("showdown"); }
+  const w = v0>v1 ? 0 : 1, l = 1-w;
+  P(w).pile.push(c[w]);
+  P(w).coll.push(c[l]);
+  G.res = { title: nm(w)+" wins the card!",
+    sub: STATS[s].k+": <b>"+c[w].s[s]+"</b> beats <b>"+c[l].s[s]+"</b>. "+nm(w)+" keeps their card and captures <b>"+esc(c[l].n)+"</b>.",
+    duo: duo(c[0], c[1], s, nm(0), nm(1)) };
+  go("result");
+}
+
+/* ---------- showdown ---------- */
+function sdFlip(){
+  const sd = G.sd, s = sd.stat;
+  const n0 = P(0).pile.length, n1 = P(1).pile.length;
+  if(n0===0 && n1===0){
+    P(0).pile.push(...sd.pots[0], G.turn.cards[0]);
+    P(1).pile.push(...sd.pots[1], G.turn.cards[1]);
+    G.res = { title:"No cards left to flip!", sub:"Neither player can finish the showdown \u2014 the tied cards return to the bottom of each pile.", duo:"" };
+    return go("result");
+  }
+  if(n0===0 || n1===0){ return sdResolve(n0===0 ? 1 : 0, true); }
+  const dec = [];
+  for(const p of [0,1]){
+    const lay = Math.min(3, P(p).pile.length-1);
+    for(let k=0;k<lay;k++){ sd.pots[p].push(P(p).pile.shift()); }
+    dec.push(P(p).pile.shift());
+  }
+  sd.deciders = dec;
+  if(dec[0].s[s]===dec[1].s[s]){
+    sd.phase = "tieagain";
+    sd.lastTie = duo(dec[0], dec[1], s, nm(0), nm(1));
+    sd.pots[0].push(dec[0]); sd.pots[1].push(dec[1]); sd.deciders = null;
+    return render();
+  }
+  sdResolve(dec[0].s[s] > dec[1].s[s] ? 0 : 1, false);
+}
+function sdResolve(w, forfeit){
+  const sd = G.sd, l = 1-w, c = G.turn.cards, s = sd.stat;
+  let captured = [];
+  if(G.sdMode==="war"){
+    captured = [...sd.pots[l]];
+    if(sd.deciders) captured.push(sd.deciders[l]);
+    captured.push(c[l]);
+    P(w).coll.push(...captured);
+    P(w).pile.push(...sd.pots[w]);
+    if(sd.deciders) P(w).pile.push(sd.deciders[w]);
+    P(w).pile.push(c[w]);
+  } else {
+    if(sd.deciders){ captured = [sd.deciders[l]]; P(w).coll.push(sd.deciders[l]); }
+    else { captured = [c[l]]; P(w).coll.push(c[l]); }
+    P(0).pile.push(...sd.pots[0]); P(1).pile.push(...sd.pots[1]);
+    if(sd.deciders) P(w).pile.push(sd.deciders[w]);
+    P(w).pile.push(c[w]);
+    if(sd.deciders) P(l).pile.push(c[l]); /* forfeit: original was already captured */
+  }
+  const names = captured.map(x=>"<b>"+esc(x.n)+"</b>").join(", ");
+  G.res = { title: "\u2694\uFE0F "+nm(w)+" wins the showdown!",
+    sub: (forfeit ? nm(l)+" had no cards left to flip. " :
+      STATS[s].k+": <b>"+(sd.deciders?sd.deciders[w].s[s]:"")+"</b> beats <b>"+(sd.deciders?sd.deciders[l].s[s]:"")+"</b>. ")+
+      nm(w)+" captures "+names+". All other cards return to the bottom of each pile.",
+    duo: sd.deciders ? duo(sd.deciders[0], sd.deciders[1], s, nm(0), nm(1)) : "" };
+  go("result");
+}
+
+/* ---------- challenge ---------- */
+function doChallenge(){
+  if(!G.chDeck.length){
+    const order = G.chDisc.slice().sort((a,b)=>a-b);
+    G.chDeck = G.chMode==="shuffled" ? shuffle(G.chDisc) : order;
+    G.chDisc = [];
+  }
+  const idx = G.chDeck.shift(); G.chDisc.push(idx);
+  const card = CHALLENGES[idx];
+  if(card.wild){ return go("wildcard"); }
+  beginChallenge(card, false);
+}
+function beginChallenge(card, wild){
+  G.q = { card, wild, marks:[null,null,null], rev:[false,false,false] };
+  go("challenge");
+}
+function pickPerek(p){
+  const pool = CHALLENGES.filter(c=>!c.wild && c.perek===p);
+  beginChallenge(pool[Math.floor(Math.random()*pool.length)], true);
+}
+function revealAns(i){ G.q.rev[i]=true; render(); }
+function mark(i,val){ G.q.marks[i]=val; render(); }
+function resolveChallenge(){
+  const correct = G.q.marks.filter(m=>m===true).length;
+  const win = correct >= G.chWin;
+  const ch = G.turn.resp, opp = G.caller, c = G.turn.cards;
+  if(win){
+    P(ch).ch++; P(ch).coll.push(c[opp]); P(ch).pile.push(c[ch]);
+    if(P(ch).ch>=10){ return gameOver("challenges", ch); }
+    G.res = { title:"\u2714 Challenge WON!",
+      sub:correct+"/3 correct (needed "+G.chWin+") \u2014 "+nm(ch)+" earns a Challenge point <b>and</b> captures <b>"+esc(c[opp].n)+"</b>. That's "+P(ch).ch+"/10.",
+      duo:"" };
+  } else {
+    P(opp).coll.push(c[ch]); P(opp).pile.push(c[opp]);
+    G.res = { title:"\u2718 Challenge lost",
+      sub:"Only "+correct+"/3 correct \u2014 needed "+G.chWin+". "+nm(opp)+" keeps their card and captures <b>"+esc(c[ch].n)+"</b>. No challenge point.",
+      duo:"" };
+  }
+  go("result");
+}
+
+/* ---------- endings ---------- */
+function endByCards(){
+  const c0 = P(0).coll.length, c1 = P(1).coll.length;
+  if(c0!==c1) return gameOver("cards", c0>c1?0:1);
+  if(P(0).ch!==P(1).ch) return gameOver("tiebreak", P(0).ch>P(1).ch?0:1);
+  gameOver("draw", null);
+}
+function gameOver(reason, w){
+  G.over = {reason, w};
+  go("gameover");
+}
+function rematch(){ newGame(); }
+
+/* ---------- render ---------- */
+function render(){
+  scorebar();
+  const v = $v();
+  if(UI==="home"){
+    v.innerHTML = '<div class="center">'+cardBack()+
+      '<h1 class="title">NAVI CARDS</h1><div class="subtitle">Shmuel Beis Edition</div>'+
+      '<p class="lead">A little luck. A little bluffing. A lot of Navi. The better you know Shmuel Beis, the better you play.</p>'+
+      '<div style="width:100%;max-width:340px"><button class="btn gold" onclick="go(\'setup\')">Start a game</button>'+
+      '<button class="btn ghost" onclick="openRules()">How to play</button></div>'+
+      '<p class="smallnote">2 players \u00B7 one phone \u00B7 pass &amp; play<br>6th Grade Boys \u00B7 BHA</p></div>';
+    return;
+  }
+  if(UI==="setup"){
+    const c = SETUP;
+    v.innerHTML =
+      '<div class="kicker">New Game</div>'+
+      '<div class="field"><label>Player 1</label><input id="n0" value="'+esc(c.names[0])+'" maxlength="14"></div>'+
+      '<div class="field"><label>Player 2</label><input id="n1" value="'+esc(c.names[1])+'" maxlength="14"></div>'+
+      '<div class="field"><label>Challenge deck</label><div class="choice">'+
+        '<button class="chip'+(c.chMode==="order"?" sel":"")+'" onclick="setOpt(\'chMode\',\'order\')">In order<small>perek by perek \u2014 friendly</small></button>'+
+        '<button class="chip'+(c.chMode==="shuffled"?" sel":"")+'" onclick="setOpt(\'chMode\',\'shuffled\')">Shuffled<small>any perek, any time \u2014 brave</small></button></div></div>'+
+      '<div class="field"><label>Correct answers to win a challenge</label><div class="choice" style="grid-template-columns:repeat(3,1fr)">'+
+        '<button class="chip'+(c.chWin===1?" sel":"")+'" onclick="setOpt(\'chWin\',1)">1 of 3<small>warm-up</small></button>'+
+        '<button class="chip'+(c.chWin===2?" sel":"")+'" onclick="setOpt(\'chWin\',2)">2 of 3<small>solid</small></button>'+
+        '<button class="chip'+(c.chWin===3?" sel":"")+'" onclick="setOpt(\'chWin\',3)">3 of 3<small>the real rule</small></button></div></div>'+
+      '<div class="field"><label>Showdown prize (Rabbi D\u2019s rule)</label><div class="choice">'+
+        '<button class="chip'+(c.sdMode==="simple"?" sel":"")+'" onclick="setOpt(\'sdMode\',\'simple\')">Simple<small>winner takes the flipped card</small></button>'+
+        '<button class="chip'+(c.sdMode==="war"?" sel":"")+'" onclick="setOpt(\'sdMode\',\'war\')">Winner takes all<small>scoop every card laid down</small></button></div></div>'+
+      '<div class="field"><label>Who calls first?</label><div class="choice">'+
+        '<button class="chip'+(c.first===0?" sel":"")+'" onclick="setOpt(\'first\',0)" id="f0">'+esc(c.names[0])+'</button>'+
+        '<button class="chip'+(c.first===1?" sel":"")+'" onclick="setOpt(\'first\',1)" id="f1">'+esc(c.names[1])+'</button></div>'+
+        '<p class="hint">House rule: the <b>older</b> player calls first. Same age? Longer Hebrew name. Still tied? Whoever can name more perakim of Shmuel Beis.</p></div>'+
+      '<button class="btn gold" onclick="beginFromSetup()">Deal the cards</button>'+
+      '<button class="btn ghost" onclick="go(\'home\')">Back</button>';
+    return;
+  }
+  if(UI==="handoff"){
+    const h = G.hand;
+    v.innerHTML = '<div class="hand">'+cardBack()+
+      '<div class="passlbl">Pass the phone to</div><div class="passname">'+nm(h.p)+'</div>'+
+      '<p class="passwhy">'+h.sub+'</p>'+
+      '<div style="width:100%;max-width:340px"><button class="btn gold" onclick="handoffDone()">I\u2019m '+nm(h.p)+' \u2014 continue</button></div></div>';
+    return;
+  }
+  if(UI==="caller"){
+    const t = G.turn;
+    let inner;
+    if(!t.cShown){
+      inner = cardBack()+'<button class="btn gold" onclick="revealCaller()">Reveal my card</button>';
+    } else {
+      let btns = "";
+      STATS.forEach((s,i)=>{ btns += '<button class="statbtn" onclick="callStat('+i+')"><span class="ic">'+s.ic+'</span><span>Call '+s.k+'</span><span class="arr">\u279C</span></button>'; });
+      inner = cardFace(t.cards[G.caller], null)+
+        '<div class="kicker">Call one stat \u2014 name only, never the number</div><div class="statbtns">'+btns+'</div>'+
+        '<p class="hint" style="text-align:center">Strong stat? Call it with confidence. Weak card? Maybe bluff with something scary\u2026</p>';
+    }
+    v.innerHTML = '<div class="kicker">Round '+G.round+' \u00B7 '+nm(G.caller)+' is the caller</div>'+inner;
+    return;
+  }
+  if(UI==="responder"){
+    const t = G.turn, s = t.called;
+    let inner;
+    if(!t.rShown){
+      inner = cardBack()+'<button class="btn gold" onclick="revealResp()">Reveal my card</button>';
+    } else {
+      inner = cardFace(t.cards[t.resp], s)+
+        '<div class="btnrow"><button class="btn green" onclick="doAccept()">Accept</button>'+
+        '<button class="btn red" onclick="doChallenge()">Challenge!</button></div>'+
+        '<p class="hint"><b>Accept:</b> flip both cards \u2014 higher '+STATS[s].k+' wins the other card. <b>Challenge:</b> forget the numbers \u2014 answer '+(G.chWin===3?'all 3':G.chWin+' of the 3')+' questions on a challenge card. Win = +1 point AND their card. Lose = your card is gone.</p>';
+    }
+    v.innerHTML = '<div style="text-align:center;margin-bottom:10px"><span class="calledTag">'+nm(G.caller)+' called: '+STATS[s].ic+' '+STATS[s].k+'</span></div>'+inner;
+    return;
+  }
+  if(UI==="showdown"){
+    const sd = G.sd, t = G.turn, s = sd.stat;
+    if(sd.phase==="intro"){
+      v.innerHTML = '<div class="banner gold"><h2>\u2694\uFE0F SHOWDOWN!</h2>'+
+        '<p>A perfect tie on <b>'+STATS[s].k+'</b> \u2014 both cards show <b>'+t.cards[0].s[s]+'</b>!</p></div>'+
+        duo(t.cards[0], t.cards[1], s, nm(0), nm(1))+
+        '<div class="minibacks"><div class="miniback"></div><div class="miniback"></div><div class="miniback"></div></div>'+
+        '<p class="hint" style="text-align:center">Each player lays <b>3 cards face-down</b>, then flips a <b>4th</b>. Higher '+STATS[s].k+' on the flipped card wins the showdown.</p>'+
+        '<button class="btn gold" onclick="sdFlip()">Lay 3 down \u2014 flip the 4th!</button>';
+    } else {
+      v.innerHTML = '<div class="banner plain"><h2>Tied AGAIN?!</h2>'+
+        '<p>The flipped cards matched on '+STATS[s].k+' too. Lay 3 more down and flip again \u2014 until someone wins.</p></div>'+
+        (sd.lastTie||"")+
+        '<button class="btn gold" onclick="sdFlip()">Flip again!</button>';
+    }
+    return;
+  }
+  if(UI==="wildcard"){
+    const checker = G.caller, chal = G.turn.resp;
+    const perks = [...new Set(CHALLENGES.filter(c=>!c.wild).map(c=>c.perek))];
+    let grid = ""; perks.forEach(p=>{ grid += '<button class="pk" onclick="pickPerek('+p+')">'+p+'</button>'; });
+    v.innerHTML = '<div class="banner gold"><h2>\u2605 WILDCARD \u2605</h2>'+
+      '<p><b>'+nm(checker)+'</b> picks ANY perek \u2014 and <b>'+nm(chal)+'</b> has to face it. Choose wisely\u2026</p></div>'+
+      '<div class="perekgrid">'+grid+'</div>';
+    return;
+  }
+  if(UI==="challenge"){
+    const q = G.q, card = q.card, chal = G.turn.resp, checker = G.caller;
+    let blocks = "";
+    card.q.forEach((item,i)=>{
+      const letter = ["A","B","C"][i];
+      let tail;
+      if(!q.rev[i]){
+        tail = '<button class="revealbtn" onclick="revealAns('+i+')">Reveal answer</button>';
+      } else {
+        tail = '<div class="ans">'+item.a+'</div>'+
+          '<div class="marks"><button class="mk y'+(q.marks[i]===true?" sel":"")+'" onclick="mark('+i+',true)">\u2713 Correct</button>'+
+          '<button class="mk n'+(q.marks[i]===false?" sel":"")+'" onclick="mark('+i+',false)">\u2717 Wrong</button></div>';
+      }
+      blocks += '<div class="qblock"><div class="qrow"><span class="qchip">'+letter+'</span><span class="qtext">'+item.q+'</span></div>'+tail+'</div>';
+    });
+    const ready = q.marks.every(m=>m!==null);
+    v.innerHTML = '<p class="hint" style="text-align:center;margin:0 0 10px"><b>'+nm(checker)+'</b> holds the phone and reads each question out loud. <b>'+nm(chal)+'</b> answers out loud <i>before</i> the answer is revealed. Get '+(G.chWin===3?'all 3':G.chWin+' of 3')+' right to win!</p>'+
+      '<div class="chead"><span class="t">\u2726 NAVI CHALLENGE \u2726<br><span style="font-size:11px;letter-spacing:1px;color:#cfd6e4">Perek '+card.perek+' \u00B7 Shmuel Beis'+(q.wild?' \u00B7 \u2605 Wildcard':'')+'</span></span><span class="num">#'+card.id+'</span></div>'+
+      '<div class="cbody">'+blocks+'</div>'+
+      '<button class="btn gold" '+(ready?"":"disabled")+' onclick="resolveChallenge()">'+(ready?"Lock in the result":"Check all 3 answers first")+'</button>';
+    return;
+  }
+  if(UI==="result"){
+    const r = G.res;
+    v.innerHTML = '<div class="kicker">Round '+G.round+'</div>'+
+      '<div class="banner gold"><h2>'+r.title+'</h2><p>'+r.sub+'</p></div>'+
+      (r.duo||"")+
+      '<button class="btn gold" onclick="nextTurn()">Next round \u2014 '+nm(1-G.caller)+' calls</button>';
+    return;
+  }
+  if(UI==="gameover"){
+    const o = G.over;
+    let head, sub;
+    if(o.reason==="challenges"){ head = "\uD83C\uDFC6 "+nm(o.w)+" WINS!"; sub = "10 Challenges won \u2014 the instant \u201CI really know my Navi\u201D victory."; }
+    else if(o.reason==="cards"){ head = "\uD83C\uDFC6 "+nm(o.w)+" WINS!"; sub = "The cards ran out \u2014 most cards collected takes the game."; }
+    else if(o.reason==="tiebreak"){ head = "\uD83C\uDFC6 "+nm(o.w)+" WINS!"; sub = "Cards collected were tied \u2014 challenges won breaks the tie."; }
+    else { head = "It\u2019s a draw!"; sub = "Tied on cards AND challenges. Rematch?"; }
+    let rows = '<div class="frow hd"><span class="pn">Player</span><span>Cards</span><span>\uD83C\uDFC6 Ch.</span><span>Pile</span></div>';
+    [0,1].forEach(i=>{ rows += '<div class="frow"><span class="pn">'+nm(i)+'</span><span>'+P(i).coll.length+'</span><span>'+P(i).ch+'</span><span>'+P(i).pile.length+'</span></div>'; });
+    v.innerHTML = '<div class="center"><div class="banner gold" style="width:100%"><h2>'+head+'</h2><p>'+sub+'</p></div>'+
+      '<div class="tablewrap" style="width:100%">'+rows+'</div>'+
+      '<div style="width:100%"><button class="btn gold" onclick="rematch()">Rematch</button>'+
+      '<button class="btn ghost" onclick="G=null;go(\'home\')">Main menu</button></div>'+
+      '<p class="smallnote">\u05D1"\u05D4 \u00B7 Navi Cards \u00B7 Shmuel Beis \u00B7 BHA</p></div>';
+    return;
+  }
+}
+function setOpt(key, val){
+  SETUP.names[0] = document.getElementById("n0").value.trim() || "Player 1";
+  SETUP.names[1] = document.getElementById("n1").value.trim() || "Player 2";
+  SETUP[key] = val; render();
+}
+function beginFromSetup(){
+  SETUP.names[0] = document.getElementById("n0").value.trim() || "Player 1";
+  SETUP.names[1] = document.getElementById("n1").value.trim() || "Player 2";
+  newGame();
+}
+render();
+</script>
+</body>
+</html>
